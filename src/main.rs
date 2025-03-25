@@ -184,6 +184,7 @@ async fn drive_stream(
 ) -> Result<()> {
     loop {
         let result = connection.accept_uni().await;
+        let total_responses_sent = Arc::new(AtomicUsize::default());
         match result {
             Ok(mut stream) => {
                 let mut chunks: [Bytes; 4] = array::from_fn(|_| Bytes::new());
@@ -214,6 +215,21 @@ async fn drive_stream(
                 if !has_failure {
                     total_received.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                     debug!("Received a stream!");
+
+                    // now send a response via datagram
+                    let packet = vec![1; PACKET_SIZE];
+                    let result = connection.send_datagram_wait(packet.clone().into()).await;
+
+                    match result {
+                        Ok(_) => {
+                            total_responses_sent.fetch_add(1, Ordering::Relaxed);
+                            trace!("Server Sent datagram?");
+                            task::yield_now().await;
+                        }
+                        Err(err) => {
+                            error!("Server send datagram error {err:?}");
+                        }
+                    }
                 }
             }
             Err(err) => {
@@ -282,6 +298,8 @@ async fn run_client(opt: &Opt) -> Result<()> {
         let total_sent = total_sent.clone();
         let total_received_responses = total_received_responses.clone();
         let conn_t = conn.clone();
+        tokio::spawn(drive_datagram(conn_t, total_received_responses.clone()));
+
         task::spawn(async move {
             for _ in 0..num_packets {
                 let mut stream = conn.open_uni().await.unwrap();
@@ -292,8 +310,6 @@ async fn run_client(opt: &Opt) -> Result<()> {
                         total_sent.fetch_add(1, Ordering::Relaxed);
                         trace!("Sent stream?");
                         task::yield_now().await;
-
-                        
                     }
                     Err(err) => {
                         error!("Send stream error {err:?}");
@@ -301,7 +317,6 @@ async fn run_client(opt: &Opt) -> Result<()> {
                 }
             }
         });
-        tokio::spawn(drive_datagram(conn_t, total_received_responses.clone()));
     }
 
     let duration = start.elapsed().as_secs_f64();
