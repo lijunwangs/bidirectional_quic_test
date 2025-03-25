@@ -217,7 +217,7 @@ async fn drive_stream(
                     debug!("Received a stream!");
 
                     // now send a response via datagram
-                    let packet = vec![1; PACKET_SIZE];
+                    let packet = vec!['a' as u8; PACKET_SIZE];
                     let result = connection.send_datagram_wait(packet.clone().into()).await;
 
                     match result {
@@ -244,6 +244,7 @@ async fn drive_stream(
     Ok(())
 }
 
+// Driving the receiving of datagrams for a connection.
 async fn drive_datagram(
     connection: quinn::Connection,
     total_received: Arc<AtomicUsize>,
@@ -251,9 +252,9 @@ async fn drive_datagram(
     loop {
         let result = connection.read_datagram().await;
         match result {
-            Ok(_) => {
+            Ok(bytes) => {
                 total_received.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                debug!("Received a datagram!");
+                debug!("Received a datagram bytes: {bytes:?}!");
             }
             Err(err) => {
                 info!(
