@@ -1,0 +1,23 @@
+[package]
+name = "quic-bidir-test"
+publish = false
+version = "1.0.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.22"
+bytes = "1.10"
+quinn = "0.11.6"
+#quinn = {git = "https://github.com/lijunwangs/quinn.git", rev = "b5ba0f73554052e09cc47f71198021821ccdb9d0"}
+#quinn-proto = {git = "https://github.com/lijunwangs/quinn.git", rev = "b5ba0f73554052e09cc47f71198021821ccdb9d0"}
+
+rand = "0.9.0"
+rcgen = "0.13"
+rustls = "0.23.22"
+rustls-pemfile = "2.2.0"
+solana-net-utils = "2.1.13"
+structopt = { version = "0.3", default-features = false }
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1.10"
+tracing-subscriber = "0.3.0"
+
